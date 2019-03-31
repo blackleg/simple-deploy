@@ -38,6 +38,7 @@ final class SetupDeploy extends BaseCommand
             ->addOption('check', null, InputOption::VALUE_NONE, 'Only check the connection settings for a given deployment')
             ->addOption('edit', null, InputOption::VALUE_NONE, 'Interactively create or edit a deployment configuration')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Update files & permissions even if unchanged')
+            ->addOption('yes', 'y', InputOption::VALUE_NONE, 'Automatic yes to prompts. Assume "yes" as answer to all prompts')
             ->addOption('cinereus', 'k', InputOption::VALUE_NONE)
         ;
     }
@@ -66,6 +67,7 @@ final class SetupDeploy extends BaseCommand
         $force = $input->getOption('force');
         $cinereus = $input->getOption('cinereus');
         $target = $input->getArgument('target');
+        $assumeYes= $input->getOption('yes');
 
         // Interactive deployment configuration creation
         if ($edit) {
@@ -78,7 +80,7 @@ final class SetupDeploy extends BaseCommand
         $deployment = new Deployer($filesystem, $pathResolver, $this->io);
 
         // Cache clean-up
-        $result = $this->cacheNuclearFlush();
+        $result = $this->cacheNuclearFlush($assumeYes);
         if ($result !== 0) {
             return $result;
         }
@@ -117,7 +119,7 @@ final class SetupDeploy extends BaseCommand
                 $files->join(' '),
             ]);
         }
-        if (!$this->io->confirm('Does this look like the correct location has been configured as the target root directory', false)) {
+        if (!$this->io->confirm('Does this look like the correct location has been configured as the target root directory', $assumeYes)) {
             $this->io->error(sprintf('You need to adjust the \'root:\' value under the \'options:\' sub key of this deployment\'s configuration.'));
 
             return 1;
@@ -177,8 +179,10 @@ final class SetupDeploy extends BaseCommand
 
     /**
      * Nuclear flush option.
+     * @param bool $assumeYes
+     * @return int
      */
-    private function cacheNuclearFlush()
+    private function cacheNuclearFlush($assumeYes = false)
     {
         /** @var Manager $filesystem */
         $filesystem = $this->app['filesystem'];
@@ -190,7 +194,7 @@ final class SetupDeploy extends BaseCommand
             'This will clear all volatile cache data, including user session data, potentially causing data loss for currently connected web clients.',
             'DO NOT perform on a live system!',
         ]);
-        $answer = $this->io->confirm('Continue?', false);
+        $answer = $this->io->confirm('Continue?', $assumeYes);
         if (!$answer) {
             return $this->cancel();
         }
