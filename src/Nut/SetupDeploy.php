@@ -38,8 +38,8 @@ final class SetupDeploy extends BaseCommand
             ->addOption('check', null, InputOption::VALUE_NONE, 'Only check the connection settings for a given deployment')
             ->addOption('edit', null, InputOption::VALUE_NONE, 'Interactively create or edit a deployment configuration')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Update files & permissions even if unchanged')
-            ->addOption('cinereus', 'k', InputOption::VALUE_NONE)
-        ;
+            ->addOption('assume-yes', ['yes', 'y'], InputOption::VALUE_NONE, 'Automatic yes to prompts. Assume "yes" as answer to all prompts.')
+            ->addOption('cinereus', 'k', InputOption::VALUE_NONE);
     }
 
     /**
@@ -67,6 +67,8 @@ final class SetupDeploy extends BaseCommand
         $cinereus = $input->getOption('cinereus');
         $target = $input->getArgument('target');
 
+        $assumeYes= $input->getOption('assume-yes');
+
         // Interactive deployment configuration creation
         if ($edit) {
             $generator = new Configuration\Editor($filesystem->getFilesystem('root'), $pathResolver, $this->io);
@@ -78,7 +80,7 @@ final class SetupDeploy extends BaseCommand
         $deployment = new Deployer($filesystem, $pathResolver, $this->io);
 
         // Cache clean-up
-        $result = $this->cacheNuclearFlush();
+        $result = $this->cacheNuclearFlush($assumeYes);
         if ($result !== 0) {
             return $result;
         }
@@ -177,8 +179,10 @@ final class SetupDeploy extends BaseCommand
 
     /**
      * Nuclear flush option.
+     * @param bool $assumeYes
+     * @return int
      */
-    private function cacheNuclearFlush()
+    private function cacheNuclearFlush($assumeYes = false)
     {
         /** @var Manager $filesystem */
         $filesystem = $this->app['filesystem'];
@@ -190,7 +194,7 @@ final class SetupDeploy extends BaseCommand
             'This will clear all volatile cache data, including user session data, potentially causing data loss for currently connected web clients.',
             'DO NOT perform on a live system!',
         ]);
-        $answer = $this->io->confirm('Continue?', false);
+        $answer = $this->io->confirm('Continue?', $assumeYes);
         if (!$answer) {
             return $this->cancel();
         }
