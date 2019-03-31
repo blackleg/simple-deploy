@@ -38,7 +38,7 @@ final class SetupDeploy extends BaseCommand
             ->addOption('check', null, InputOption::VALUE_NONE, 'Only check the connection settings for a given deployment')
             ->addOption('edit', null, InputOption::VALUE_NONE, 'Interactively create or edit a deployment configuration')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Update files & permissions even if unchanged')
-            ->addOption('assume-yes', ['yes', 'y'], InputOption::VALUE_NONE, 'Automatic yes to prompts. Assume "yes" as answer to all prompts.')
+            ->addOption('yes', 'y', InputOption::VALUE_NONE, 'Automatic yes to prompts. Assume "yes" as answer to all prompts.')
             ->addOption('cinereus', 'k', InputOption::VALUE_NONE);
     }
 
@@ -67,7 +67,7 @@ final class SetupDeploy extends BaseCommand
         $cinereus = $input->getOption('cinereus');
         $target = $input->getArgument('target');
 
-        $assumeYes= $input->getOption('assume-yes');
+        $assumeYes= $input->getOption('yes');
 
         // Interactive deployment configuration creation
         if ($edit) {
@@ -119,7 +119,7 @@ final class SetupDeploy extends BaseCommand
                 $files->join(' '),
             ]);
         }
-        if (!$this->io->confirm('Does this look like the correct location has been configured as the target root directory', false)) {
+        if (!$this->io->confirm('Does this look like the correct location has been configured as the target root directory', $assumeYes)) {
             $this->io->error(sprintf('You need to adjust the \'root:\' value under the \'options:\' sub key of this deployment\'s configuration.'));
 
             return 1;
